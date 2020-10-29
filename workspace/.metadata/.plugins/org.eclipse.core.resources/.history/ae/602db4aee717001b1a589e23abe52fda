@@ -1,0 +1,157 @@
+package kr.tracom.smps.scenario.service;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.tracom.smps.action.mapper.ActionMapper;
+import kr.tracom.smps.handler.ExecuteHandler;
+import kr.tracom.smps.scenario.controller.ScenarioController;
+import kr.tracom.smps.scenario.mapper.ScenarioMapper;
+
+@Service
+public class ScenarioService {
+	
+	@Autowired
+	private ScenarioMapper mapper;
+	
+	@Autowired
+	private ActionMapper actionMapper;
+	
+	@Autowired
+	private ExecuteHandler handler;
+	
+	public Map<String, Object> selectScenarioList(Map<String, Object> input) {
+		input.put("delYn", "N");
+		input.put("actionList", actionMapper.selectActionList(input));
+		input.put("scenarioList", mapper.selectScenarioList(input));
+		
+		return input;
+	}
+	//park
+	public Map<String, Object> selectReservedScenarioList(Map<String, Object> input) {
+		//input.put("delYn", "N");
+		//input.put("actionList", actionMapper.selectActionList(input));
+		//input.put("scenarioList", mapper.selectScenarioList(input));
+		input.put("reserveList", mapper.selectReservedScenarioList(input));
+		System.out.println(input);
+		return input;
+	}
+	
+	public Map<String, Object> selectDeletedScenarioList(Map<String, Object> input) {
+		input.put("deletedScenarioList", mapper.selectDeletedScenarioList(input));
+		return input;
+	}
+	
+	public boolean insertScenario(Map<String, Object> input) {
+		boolean result = false;
+		String scenarioId = mapper.selectLastScenarioId(input);
+		((Map<String, Object>)input.get("scenario")).put("scenarioId", scenarioId);
+		
+		if(mapper.insertScenario(input) > 0)
+			result = true;
+		
+		mapper.insertScenarioAction(input);
+		
+		return result;
+	}
+	
+	///////////////park
+	public boolean insertReserve(Map<String, Object> input) {
+		boolean result = false;
+		String scenarioId = mapper.selectLastScenarioId(input);
+		((Map<String, Object>)input.get("scenario")).put("scenarioId", scenarioId);
+		
+		if(mapper.insertReserve(input) > 0)
+			result = true;
+		
+		//mapper.insertReserveAction(input);
+		
+		return result;
+	}
+	
+	@Transactional
+	public boolean updateReserveScenario(Map<String, Object> input, int status) {
+		boolean result = false;
+		
+		if(mapper.updateReserveScenario(input) > 0)
+			result = true;
+		
+		
+		
+		//mapper.deleteScenarioAction(input);
+		//mapper.insertScenarioAction(input);
+		
+		
+		//db 예약상태 업데이트
+//		if(status==0) {
+//			ScenarioController.srTemp.put("status","대기중");
+//			input.put("scenario", ScenarioController.srTemp);
+//			System.out.println("새로운 INPUT!!!!! : "+input);
+//		}else if(status==1) {
+//			ScenarioController.srTemp.put("status","실행중");
+//			input.put("scenario", ScenarioController.srTemp);
+//			System.out.println("새로운 INPUT!!!!! : "+input);
+//		}else if(status==2) {
+//			ScenarioController.srTemp.put("status","실행완료");
+//			input.put("scenario", ScenarioController.srTemp);
+//			System.out.println("새로운 INPUT!!!!! : "+input);
+//		}else {
+//			System.out.println("잘못된 예약 상태값");
+//		}
+		
+		
+		return result;
+	}
+	///////////////
+	
+	
+	@Transactional
+	public boolean updateScenario(Map<String, Object> input) {
+		boolean result = false;
+		
+		if(mapper.updateScenario(input) > 0)
+			result = true;
+		
+		mapper.deleteScenarioAction(input);
+		mapper.insertScenarioAction(input);
+		
+		return result;
+	}
+	
+	public boolean deleteScenario(Map<String, Object> input) {
+		input.put("delYn", "Y");
+		if(mapper.updateDeleteScenario(input) > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean recoveryScenario(Map<String, Object> input) {
+		input.put("delYn", "N");
+		if(mapper.updateDeleteScenario(input) > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public void executeScenario(Map<String, Object> input) {
+		//park
+//		boolean result = false;
+//		
+//		if(mapper.updateReserveScenario(input) > 0)
+//			result = true;
+//		mapper.updateReserveScenario(input);
+//		
+//		System.out.println(input);
+		
+		//
+		
+		input.put("workType", "SR");
+		handler.execute(input);
+	}
+}

@@ -1,0 +1,90 @@
+package kr.tracom.smps.handler;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import kr.tracom.smps.common.BeanUtil;
+import kr.tracom.smps.statistics.mapper.StatisticsMapper;
+
+public class DataHandler {
+	private StatisticsMapper mapper;
+	private SimpMessagingTemplate template;
+	
+	private BlockingQueue<Map<String, Object>> queue;
+	private int size;
+	private int count;
+	private String workType;
+	private boolean flag = false;
+	
+	public DataHandler(int size, String workType) {
+		this.mapper = (StatisticsMapper) BeanUtil.getBean(StatisticsMapper.class);
+		this.template = (SimpMessagingTemplate) BeanUtil.getBean(SimpMessagingTemplate.class);
+		this.size = size;
+		this.count = 0;
+		this.workType = workType;
+		this.queue = new ArrayBlockingQueue<>(size);
+	}
+	
+	synchronized public void putData(Map<String, Object> input) {
+		try {
+			if(flag)
+				return;
+			
+			queue.put(input);
+			count++;
+
+			sendWorkCount(count);
+			
+			if(this.size == this.count) {
+				processInsert();
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void setFlag(boolean flag) {
+		this.flag = flag;
+	}
+	
+	public boolean getFlag() {
+		return this.flag;
+	}
+	
+	public void sendTotalCount(int totalCount) {
+		Map<String, Object> countMessage = new HashMap<String, Object>();
+		countMessage.put("type", "TC");
+		countMessage.put("payload", totalCount);
+		template.convertAndSend("/message", countMessage); 
+	}
+	
+	private void sendWorkCount(int count) {
+		Map<String, Object> countMessage = new HashMap<String, Object>();
+		countMessage.put("type", "CT");
+		countMessage.put("payload", count);
+		template.convertAndSend("/message", countMessage);
+	}
+	
+	public void processInsert() {
+		System.out.println("요청결과 insert 작업 실행... Records: " + queue.size());
+		insertResult();
+		Map<String, Object> resultMessage = new HashMap<String, Object>();
+		
+		if(this.flag)
+			resultMessage.put("type", "PS");
+		else
+			resultMessage.put("type", this.workType);
+		template.convertAndSend("/message", resultMessage);
+	}
+	
+	private void insertResult() {
+		Map<String, Object> input = new HashMap<String, Object>();
+		input.put("resultList", new ArrayList<Map<String, Object>>(queue));
+		mapper.insertResult(input);
+	}
+}

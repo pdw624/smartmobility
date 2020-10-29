@@ -1,0 +1,110 @@
+package kr.tracom.smps.scenario.service;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import kr.tracom.smps.action.mapper.ActionMapper;
+import kr.tracom.smps.handler.ExecuteHandler;
+import kr.tracom.smps.scenario.mapper.ScenarioMapper;
+
+@Service
+public class ScenarioService {
+	
+	@Autowired
+	private ScenarioMapper mapper;
+	
+	@Autowired
+	private ActionMapper actionMapper;
+	
+	@Autowired
+	private ExecuteHandler handler;
+	
+	public Map<String, Object> selectScenarioList(Map<String, Object> input) {
+		input.put("delYn", "N");
+		input.put("actionList", actionMapper.selectActionList(input));
+		input.put("scenarioList", mapper.selectScenarioList(input));
+		
+		return input;
+	}
+	//park
+	public Map<String, Object> selectReservedScenarioList(Map<String, Object> input) {
+		//input.put("delYn", "N");
+		//input.put("actionList", actionMapper.selectActionList(input));
+		//input.put("scenarioList", mapper.selectScenarioList(input));
+		
+		System.out.println(input);
+		return input;
+	}
+	
+	public Map<String, Object> selectDeletedScenarioList(Map<String, Object> input) {
+		input.put("deletedScenarioList", mapper.selectDeletedScenarioList(input));
+		return input;
+	}
+	
+	public boolean insertScenario(Map<String, Object> input) {
+		boolean result = false;
+		String scenarioId = mapper.selectLastScenarioId(input);
+		((Map<String, Object>)input.get("scenario")).put("scenarioId", scenarioId);
+		
+		if(mapper.insertScenario(input) > 0)
+			result = true;
+		
+		mapper.insertScenarioAction(input);
+		
+		return result;
+	}
+	
+	//park
+	public boolean insertReserve(Map<String, Object> input) {
+		boolean result = false;
+		String scenarioId = mapper.selectLastScenarioId(input);
+		((Map<String, Object>)input.get("scenario")).put("scenarioId", scenarioId);
+		
+		if(mapper.insertReserve(input) > 0)
+			result = true;
+		
+		//mapper.insertReserveAction(input);
+		
+		return result;
+	}
+	
+	
+	@Transactional
+	public boolean updateScenario(Map<String, Object> input) {
+		boolean result = false;
+		
+		if(mapper.updateScenario(input) > 0)
+			result = true;
+		
+		mapper.deleteScenarioAction(input);
+		mapper.insertScenarioAction(input);
+		
+		return result;
+	}
+	
+	public boolean deleteScenario(Map<String, Object> input) {
+		input.put("delYn", "Y");
+		if(mapper.updateDeleteScenario(input) > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean recoveryScenario(Map<String, Object> input) {
+		input.put("delYn", "N");
+		if(mapper.updateDeleteScenario(input) > 0) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public void executeScenario(Map<String, Object> input) {
+		input.put("workType", "SR");
+		handler.execute(input);
+	}
+}

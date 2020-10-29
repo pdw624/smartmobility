@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.tracom.smps.action.mapper.ActionMapper">
+	<select id="selectActionList" resultType="hashmap">
+		SELECT
+			  ACT_ID		AS actionId
+			, ACT_NAME		AS actionName
+			, ACT_ID		AS key
+			, ACT_NAME		AS label
+			, USR_CNT		AS userCount
+			, TIMESET		AS timeSet<!--  -->
+			, ACT_CNT		AS loopCount
+			, TARGET_URL	AS url
+			, TRANS_TYPE	AS type
+			, ENCODING		AS encoding
+			, TIMEOUT		AS timeout
+			, PARAMS		AS parameter
+			, DEL_DATETIME	AS delDt
+		FROM
+			SMPS_COMM_ACT
+		WHERE
+			DEL_YN = #{delYn}
+	</select>
+	
+	<insert id="insertAction" parameterType="hashmap">
+		INSERT INTO SMPS_COMM_ACT(
+			  ACT_ID
+			, ACT_NAME
+			, USR_CNT
+			, TIMESET<!--  -->
+			, ACT_CNT
+			, TARGET_URL
+			, TRANS_TYPE
+			, ENCODING
+			, TIMEOUT
+			, PARAMS
+			, DEL_YN
+			, RMK
+		)
+		SELECT
+			  'AT' || SUBSTR('00000', 1, 5 - length(T.SEQ || '')) || T.SEQ AS ACT_ID
+			, '${actionName}' AS ACT_NAME
+			, '${userCount}' AS USR_CNT
+			, '${timeSet}' AS TIMESET<!--  -->
+			, '${loopCount}' AS ACT_CNT
+			, '${url}' AS TARGET_URL
+			, '${type}' AS TRANS_TYPE
+			, '${encoding}' AS ENCODING
+			, '${timeout}' AS TIMEOUT
+			, '${parameter}' AS PARAMS
+			, 'N' AS DEL_YN
+			, '' AS RMK
+		FROM
+			(SELECT
+				(CASE
+					WHEN COUNT(*) == 0
+					THEN
+						1
+					ELSE
+						(SELECT
+							CAST(SUBSTR(ACT_ID, 3, 5) AS INTEGER) + 1
+						FROM
+							SMPS_COMM_ACT
+						ORDER BY ACT_ID DESC
+						LIMIT 1)
+				END) AS SEQ
+			FROM
+				SMPS_COMM_ACT) AS T
+	</insert>
+	
+	<update id="updateAction" parameterType="hashmap">
+		UPDATE SMPS_COMM_ACT
+		SET
+			  ACT_NAME		= #{actionName}
+			, USR_CNT		= #{userCount}
+			, TIMESET		= #{timeSet}<!--  -->
+			, ACT_CNT		= #{loopCount}
+			, TARGET_URL	= #{url}
+			, TRANS_TYPE	= #{type}
+			, ENCODING		= #{encoding}
+			, TIMEOUT		= #{timeout}
+			, PARAMS		= #{parameter}
+		WHERE
+			ACT_ID = #{actionId}
+	</update>
+	
+	<update id="updateDeleteAction" parameterType="hashmap">
+		UPDATE SMPS_COMM_ACT
+		SET
+			  DEL_YN = #{delYn}
+			, DEL_DATETIME = DATETIME('now', 'localtime')
+		WHERE
+			ACT_ID
+			IN (
+				<foreach collection="actionIds" item="item" separator=",">
+					#{item}
+				</foreach>
+			)
+	</update>
+</mapper>

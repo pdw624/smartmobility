@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.tracom.smps.statistics.mapper.StatisticsMapper">
+	<resultMap id="historyResult" type="hashmap">
+		<result property="workSeq" column="workSeq"/>
+		<result property="workType" column="workType"/>
+		<result property="workName" column="workName"/>
+		<result property="workDatetime" column="workDatetime"/>
+		<result property="rstCount" column="rstCount"/>
+		<result property="successCount" column="successCount"/>
+		<result property="failCount" column="failCount"/>
+	</resultMap>
+	
+	<resultMap id="resultVO" type="hashmap">
+		<result property="workSeq" column="workSeq"/>
+		<result property="rstSeq" column="rstSeq"/>
+		<result property="rstName" column="rstName"/>
+		<result property="rstType" column="rstType"/>
+		<result property="startDatetime" column="startDatetime"/>
+		<result property="endDatetime" column="endDatetime"/>
+		<result property="resTime" column="resTime"/>
+		<result property="rstContent" column="rstContent"/>
+	</resultMap>
+	
+	<resultMap id="graphVO" type="hashmap">
+		<result property="resultTime" column="RESULT_TIME"/>
+		<result property="countStartRequest" column="COUNT_START_REQUEST"/>
+		<result property="countEndRequest" column="COUNT_END_REQUEST"/>
+	</resultMap>
+	
+	<select id="selectHistoryList" resultMap="historyResult">
+		SELECT
+			  H.WORK_SEQ	AS workSeq
+			, H.WORK_TYPE	AS workType
+			, (CASE
+				WHEN WORK_TYPE == 'AT'
+				THEN
+					(SELECT
+						ACT_NAME
+					FROM
+						SMPS_COMM_ACT
+					WHERE
+						ACT_ID = H.WORK_ID
+					LIMIT 1) || '(동작)'
+				WHEN WORK_TYPE == 'SR'
+				THEN
+					(SELECT
+						SNR_NAME
+					FROM
+						SMPS_COMM_SNR
+					WHERE
+						SNR_ID = H.WORK_ID
+					LIMIT 1) || '(시나리오)'
+			  END) AS workName
+		  , H.WORK_DATETIME		AS workDatetime
+		  , COUNT(H.WORK_SEQ) AS rstCount
+		  , (SELECT COUNT(*) FROM SMPS_WORK_RST WHERE WORK_SEQ = H.WORK_SEQ AND RST_TYPE='SUCCESS') AS successCount
+		  , (SELECT COUNT(*) FROM SMPS_WORK_RST WHERE WORK_SEQ = H.WORK_SEQ AND RST_TYPE='FAIL') AS failCount
+		FROM
+			SMPS_WORK_HST AS H
+			LEFT OUTER JOIN SMPS_WORK_RST R
+			ON H.WORK_SEQ = R.WORK_SEQ
+		GROUP BY H.WORK_SEQ
+		ORDER BY H.WORK_SEQ DESC
+	</select>
+	
+	<select id="selectResultList" parameterType="hashmap" resultMap="resultVO">
+		SELECT
+			  WORK_SEQ AS workSeq
+			, RST_SEQ AS rstSeq
+			, RST_NAME AS rstName
+			, RST_TYPE AS rstType
+			, START_DATETIME AS startDatetime
+			, END_DATETIME AS endDatetime
+			, RES_TIME AS resTime
+			, RST_CONT AS rstContent
+		FROM
+			SMPS_WORK_RST
+		WHERE
+			WORK_SEQ = #{workSeq}
+		ORDER BY START_DATETIME ASC
+	</select>
+	
+	<select id="selectGraphList" parameterType="hashmap" resultMap="graphVO">
+		SELECT
+			  STRFTIME('%S', RESULT_TIME) AS RESULT_TIME
+			, SUM(COUNT_START_REQUEST) AS COUNT_START_REQUEST
+			, SUM(COUNT_END_REQUEST) AS COUNT_END_REQUEST
+		FROM
+			(SELECT
+				  STRFTIME('%Y-%m-%d %H:%M:%S', RESULT_TIME) AS RESULT_TIME
+				, COUNT(STRFTIME('%Y-%m-%d %H:%M:%S', RESULT_TIME)) AS COUNT_START_REQUEST
+				, 0 AS COUNT_END_REQUEST
+			FROM
+				(SELECT
+					STRFTIME('%Y-%m-%d %H:%M:%f', START_DATETIME, '-0.' || SUBSTR(T.START_TIME, -3, 3) || ' seconds') AS RESULT_TIME
+				FROM
+					SMPS_WORK_RST AS R,
+					(SELECT
+						SUBSTR(START_DATETIME, -3, 3) AS START_TIME
+					FROM
+						SMPS_WORK_RST
+					WHERE
+						WORK_SEQ = #{workSeq}
+					ORDER BY START_DATETIME ASC
+					LIMIT 1) AS T
+				WHERE
+					R.WORK_SEQ = #{workSeq}) T
+			GROUP BY STRFTIME('%Y-%m-%d %H:%M:%S', RESULT_TIME)
+			UNION
+			SELECT
+				  STRFTIME('%Y-%m-%d %H:%M:%S', RESULT_TIME) AS RESULT_TIME
+				, 0 AS COUNT_START_REQUEST
+				, COUNT(STRFTIME('%Y-%m-%d %H:%M:%S', RESULT_TIME)) AS COUNT_END_REQUEST
+			FROM
+				(SELECT
+					STRFTIME('%Y-%m-%d %H:%M:%f', END_DATETIME, '-0.' || SUBSTR(T.START_TIME, -3, 3) || ' seconds') AS RESULT_TIME
+				FROM
+					SMPS_WORK_RST AS R,
+					(SELECT
+						SUBSTR(START_DATETIME, -3, 3) AS START_TIME
+					FROM
+						SMPS_WORK_RST
+					WHERE
+						WORK_SEQ = #{workSeq}
+					ORDER BY START_DATETIME ASC
+					LIMIT 1) AS T
+				WHERE
+					R.WORK_SEQ = #{workSeq}) T
+			GROUP BY STRFTIME('%Y-%m-%d %H:%M:%S', RESULT_TIME)) T
+		GROUP BY RESULT_TIME
+	</select>
+	
+	<select id="selectLastWorkSeq" resultType="String">
+		SELECT
+			'WK' || SUBSTR('0000000', 1, 7 - length(T.SEQ || '')) || T.SEQ AS workSeq
+		FROM
+			(SELECT
+				(CASE
+					WHEN COUNT(*) == 0
+					THEN
+						1
+					ELSE
+						(SELECT
+							CAST(SUBSTR(WORK_SEQ, 3, 7) AS INTEGER) + 1
+						FROM
+							SMPS_WORK_HST
+						ORDER BY WORK_SEQ DESC
+						LIMIT 1)
+				END) AS SEQ
+			FROM
+				SMPS_WORK_HST) AS T
+	</select>
+	
+	<insert id="insertHistory" parameterType="hashmap">
+		INSERT INTO SMPS_WORK_HST(
+			  WORK_SEQ
+			, WORK_TYPE
+			, WORK_ID
+			, WORK_DATETIME
+		)
+		VALUES(
+			  #{workSeq}
+			, #{workType}
+			, #{workId}
+			, DATETIME('NOW', 'LOCALTIME')
+		)
+	</insert>
+	
+	<insert id="insertResult" parameterType="hashmap">
+		INSERT INTO SMPS_WORK_RST(
+			  WORK_SEQ
+			, RST_NAME
+			, RST_TYPE
+			, START_DATETIME
+			, END_DATETIME
+			, RES_TIME
+			, RST_CONT
+		)
+		VALUES
+		<foreach collection="resultList" item="item" separator=",">
+		(
+			  #{item.workSeq}
+			, #{item.rstName}
+			, #{item.rstType}
+			, #{item.startDatetime}
+			, #{item.endDatetime}
+			, #{item.resTime}
+			, #{item.rstContent}
+		)
+		</foreach>
+	</insert>
+</mapper>

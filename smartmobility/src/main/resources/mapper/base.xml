@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.tracom.smps.base.mapper.BaseMapper">
+	<select id="selectCodeValue" resultType="String">
+		SELECT
+			VALUE
+		FROM
+			SMPS_COMM_CODE
+		WHERE
+			CODE = #{code}
+	</select>
+
+	<update id="updateCodeValue" parameterType="hashmap">
+		UPDATE SMPS_COMM_CODE
+		SET
+			VALUE = #{value}
+		WHERE
+			CODE = #{code}
+	</update>	
+</mapper>

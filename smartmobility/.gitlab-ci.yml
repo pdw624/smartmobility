@@ -1,0 +1,42 @@
+variables:
+  MAVEN_CLI_OPTS: "--batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  IMAGE_NAME: smartmobility:latest
+
+cache:
+  key: "$CI_COMMIT_REF_NAME"
+  paths:
+    - .m2/repository/
+    - target/
+    - node_modules/
+
+stages:
+  - build-frontend
+  - build
+  - deploy
+
+build-frontend:
+  image: node:12
+  stage: build-frontend
+  before_script:
+    - cd frontend
+  script:
+    - npm install
+    - npm run build
+
+build:
+  image: maven:3.3.9
+  stage: build
+  script:
+    - mvn -Dmaven.test.skip=true clean package 
+
+deploy:
+  image: docker:latest
+  stage: deploy
+  services:
+    - name: docker:dind
+  script:
+    - docker build . -t $IMAGE_NAME
+    - docker container rm -f smartmobility
+    - docker run -d -p 10001:3000 --name smartmobility --restart=always -v /srv/smartmobility/smartmobility.db:/smartmobility.db $IMAGE_NAME
+    - docker ps

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.tracom.smps.scenario.mapper.ScenarioMapper">
+	<resultMap id="scenarioList" type="hashmap">
+		<result property="reserveId" column="reserveId"/><!-- park추가 -->
+		<result property="scenarioId" column="scenarioId"/>
+		<result property="scenarioName" column="scenarioName"/>
+		<result property="loopCount" column="loopCount"/>
+		<result property="delDt" column="delDt"/>
+		<collection property="actionList" column="scenarioId" javaType="java.util.ArrayList" select="selectScenarioActionList"></collection>
+	</resultMap>
+	
+	<resultMap id="actionVO" type="hashmap">
+		<result property="actionId" column="actionId"/>
+		<result property="actionName" column="actionName"/>
+		<result property="key" column="key"/>
+		<result property="label" column="label"/>
+		<result property="actionUserCount" column="actionUserCount"/>
+		<result property="actionLoopCount" column="actionLoopCount"/>
+	</resultMap>
+
+	<select id="selectScenarioList" resultMap="scenarioList">
+		SELECT
+		  	  SNR_ID		AS scenarioId
+			, SNR_NAME		AS scenarioName
+			, ACT_CNT		AS loopCount
+			, DEL_DATETIME	AS delDt
+		FROM
+			SMPS_COMM_SNR
+		WHERE
+			DEL_YN = 'N'
+	</select>
+	
+	<select id="selectScenarioActionList" resultMap="actionVO">
+		SELECT
+			  C.ACT_ID 		AS actionId
+			, A.ACT_NAME	AS actionName
+			, A.USR_CNT		AS userCount
+			, A.TIMESET		AS timeSet
+			, A.ACT_CNT		AS loopCount
+			, A.TARGET_URL	AS url
+			, A.ENCODING	AS encoding
+			, A.TRANS_TYPE	AS type
+			, A.TIMEOUT		AS timeout
+			, A.PARAMS		AS parameter
+		FROM
+			SMPS_COMM_CONT C
+			INNER JOIN SMPS_COMM_ACT A
+			ON C.ACT_ID = A.ACT_ID
+			AND A.DEL_YN = 'N'
+		WHERE
+			C.SNR_ID = #{scenarioId}
+	</select>
+	
+	<select id="selectDeletedScenarioList" resultType="hashmap">
+		SELECT
+			  S.SNR_ID			AS scenarioId
+			, S.SNR_NAME		AS scenarioName
+			, S.ACT_CNT			AS loopCount
+			, S.DEL_DATETIME	AS delDt
+			, COUNT(C.SNR_ID)	AS registerActionCount
+		FROM
+			SMPS_COMM_SNR S
+			LEFT OUTER JOIN SMPS_COMM_CONT C
+			ON S.SNR_ID = C.SNR_ID
+			LEFT OUTER JOIN SMPS_COMM_ACT A
+			ON C.ACT_ID = A.ACT_ID
+			AND A.DEL_YN = 'N'
+		WHERE
+			S.DEL_YN = 'Y'
+		GROUP BY S.SNR_ID
+	</select>
+	
+	<select id="selectLastScenarioId" resultType="String">
+		SELECT
+			'SR' || SUBSTR('00000', 1, 5 - length(T.SEQ || '')) || T.SEQ AS SNR_ID
+		FROM
+			(SELECT
+				(CASE
+					WHEN COUNT(*) == 0
+					THEN
+						1
+					ELSE
+						(SELECT
+							CAST(SUBSTR(SNR_ID, 3, 5) AS INTEGER) + 1
+						FROM
+							SMPS_COMM_SNR
+						ORDER BY SNR_ID DESC
+						LIMIT 1)
+				END) AS SEQ
+			FROM
+				SMPS_COMM_SNR) AS T
+	</select>
+	
+	<insert id="insertScenario" parameterType="hashmap">
+		INSERT INTO SMPS_COMM_SNR(
+			  SNR_ID
+			, SNR_NAME
+			, ACT_CNT
+			, DEL_YN
+			, RMK
+		) VALUES (
+			  #{scenario.scenarioId}
+			, #{scenario.scenarioName}
+			, #{scenario.loopCount}
+			, 'N'
+			, ''
+		)
+	</insert>
+	
+	<insert id="insertScenarioAction" parameterType="hashmap">
+		<if test="actionIds != null and actionIds.size != 0">
+			INSERT INTO SMPS_COMM_CONT VALUES
+			<foreach collection="actionIds" item="item" separator=",">
+			(
+				#{scenario.scenarioId},
+				#{item}
+			)
+			</foreach>
+		</if>
+	</insert>
+	
+	<!-- park reserve start-->
+	<insert id="insertReserve" parameterType="hashmap">
+		INSERT INTO SMPS_COMM_RSRV(
+			  SNR_ID
+			, SNR_NAME
+			, RSRV_TIME
+			, STATUS
+
+		) VALUES (
+			  #{scenario.scenarioId}
+			, #{scenario.scenarioName}
+			, #{scenario.reserveTime}
+			, ''
+
+		)
+	</insert>
+	
+	<select id="selectReservedScenarioList" resultMap="scenarioList">
+		SELECT
+			  RSRV_ID		AS reserveId 
+		  	, SNR_ID		AS scenarioId
+			, SNR_NAME		AS scenarioName
+			, RSRV_TIME		AS reserveTime
+			, STATUS		AS status
+		FROM
+			SMPS_COMM_RSRV
+		WHERE
+			CAN_YN = 'N'
+		
+	</select>
+	
+	<update id="updateReserveScenario" parameterType="hashmap">
+		UPDATE SMPS_COMM_RSRV
+		SET
+			  STATUS		= #{scenario.status}
+		WHERE
+			RSRV_ID = #{scenario.reserveId}
+	</update>
+	
+	<select id="selectLastReserveId" resultType="String">
+		SELECT MAX(RSRV_ID)
+		FROM SMPS_COMM_RSRV
+	</select>
+	
+	<update id="updateDeleteReserve" parameterType="hashmap">
+		UPDATE SMPS_COMM_RSRV
+		SET
+			  CAN_YN = #{canYn}
+		WHERE
+			RSRV_ID
+			IN (
+				<foreach collection="reserveIds" item="item" separator=",">
+					#{item}
+				</foreach>
+			)
+	</update>
+	
+	
+	<!-- end -->
+	
+	<update id="updateScenario" parameterType="hashmap">
+		UPDATE SMPS_COMM_SNR
+		SET
+			  SNR_NAME		= #{scenario.scenarioName}
+			, ACT_CNT		= #{scenario.loopCount}
+		WHERE
+			SNR_ID = #{scenario.scenarioId}
+	</update>
+	
+	<update id="updateDeleteScenario" parameterType="hashmap">
+		UPDATE SMPS_COMM_SNR
+		SET
+			  DEL_YN = #{delYn}
+			, DEL_DATETIME = DATETIME('now', 'localtime')
+		WHERE
+			SNR_ID
+			IN (
+				<foreach collection="scenarioIds" item="item" separator=",">
+					#{item}
+				</foreach>
+			)
+	</update>
+	
+	<delete id="deleteScenarioAction" parameterType="hashmap">
+		DELETE FROM SMPS_COMM_CONT
+		WHERE SNR_ID = #{scenario.scenarioId}
+	</delete>
+</mapper>
