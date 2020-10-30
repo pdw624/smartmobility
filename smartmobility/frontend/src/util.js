@@ -22,6 +22,11 @@ const Util = {
                 executeScenario: [ 'success', '실행 완료', '통계조회에서 결과 확인이 가능합니다' ],
                 executeScenarioCheck: [ 'info', '실행', '실행할 시나리오를 체크해주세요' ],
 
+                saveReserveScenarioCheck: [ 'info', '예약 시나리오 저장', '동작을 1개이상 등록해주세요' ],
+                overlapReserveScenario: [ 'info', '예약 중복', '이미 존재하는 예약날짜입니다.' ],
+                isExecuteReserveScenario: [ 'info', '예약 실행중', '예약 시나리오가 실행중입니다.' ],
+
+
                 pause: [ 'info', '실행', '실행중인 작업이 중지되었습니다' ],
 
                 // 통계조회 팝업 메시지

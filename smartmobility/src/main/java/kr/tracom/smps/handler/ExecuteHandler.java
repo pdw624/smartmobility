@@ -135,7 +135,7 @@ public class ExecuteHandler {
 			System.out.println("시나리오 총 실행시간(ms): " + (end - start) / 1000.0);
 			
 			//park
-			service.updateReserveScenario(input, 2, ScenarioController.srTemp);
+			//service.updateReserveScenario(input, 2, ScenarioController.srTemp);
 			
 		}
 	}

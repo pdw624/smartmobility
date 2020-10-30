@@ -205,12 +205,12 @@ export default {
                 ],
                 timeSet: [
                     { required: true, message: '실행시간을 입력해주세요', trigger: 'blur' },
-                    {
-                        validator: (rule, value, callback) => {
-                            var regex = /^[0-9]+$/
-                            value.match(regex) ? callback() : callback(new Error('실행 시간은 숫자만 입력 가능합니다.'))
-                        }
-                    }
+                    // {
+                    //     validator: (rule, value, callback) => {
+                    //         var regex = /^[0-9]+$/
+                    //         value.match(regex) ? callback() : callback(new Error('실행 시간은 숫자만 입력 가능합니다.'))
+                    //     }
+                    // }
                 ],
                 url: [
                     { required: true, message: 'URL을 입력해주세요', trigger: 'blur' },
@@ -412,17 +412,57 @@ export default {
 
         // 동작에서 실행 버튼 클릭시 
         executeAction() {
-            if(this.checkedRows.length == 0) {
-                this.notification('executeActionCheck')
-            } else {
-                this.setIsExecute({
-                    isExecute: true,
-                    message: '동작이 실행중입니다'
-                })
-                this.axios.post('/api/v1/action/execute', {
-                    actionList: this.checkedRows
-                })
-            }
+            // if(this.checkedRows.length == 0) {
+            //     this.notification('executeActionCheck')
+            // } else {
+            //     this.setIsExecute({
+            //         isExecute: true,
+            //         message: '동작이 실행중입니다'
+            //     })
+            //     this.axios.post('/api/v1/action/execute', {
+            //         actionList: this.checkedRows
+            //     })
+            // }
+
+
+
+
+
+
+            var scenarioExecute = false;
+            
+            this.axios.get('/api/v1/scenario/checkScenario').then(response => {
+                console.log("bbbbbbbbbbbb   ",response.data.executeFlag)
+                scenarioExecute = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                    if (scenarioExecute == true){
+                        // 메시지 띄우는 로직
+                        //alert("이미 시나리오가 실행중임니당...");
+                        this.notification('isExecuteReserveScenario')
+                        
+                    }else{
+                        if(this.checkedRows.length == 0) {
+                            this.notification('executeScenarioCheck')
+                        } else {
+                            this.setIsExecute({
+                                isExecute: true,
+                                message: '동작이 실행중입니다'
+                            })
+                            this.axios.post('/api/v1/action/execute', {
+                                actionList: this.checkedRows
+                            })
+                        }
+                    }
+                    //return;
+                //}
+            })
+
+
+
+
+
+
+
         },
 
         // 동작에서 중지 버튼 클릭시

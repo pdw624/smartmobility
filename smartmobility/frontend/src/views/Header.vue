@@ -28,14 +28,14 @@
                         동작설정
                     </el-menu-item>
                     <!--테스트-->
-                     <el-menu-item index="/totalInfo">
+                     <!--el-menu-item index="/totalInfo">
                         종합집계
                     </el-menu-item>
 
 
                      <el-menu-item index="/chart">
                         통계 그래프
-                    </el-menu-item>
+                    </el-menu-item-->
 
                 </el-menu>
             </el-col>

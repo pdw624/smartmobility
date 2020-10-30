@@ -1,6 +1,8 @@
 package kr.tracom.smps.scenario.service;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +59,7 @@ public class ScenarioService {
 		//input.put("actionList", actionMapper.selectActionList(input));
 		//input.put("scenarioList", mapper.selectScenarioList(input));
 		input.put("reserveList", mapper.selectReservedScenarioList(input));
+		
 		//System.out.println(input);
 		return input;
 	}
@@ -124,6 +127,8 @@ public class ScenarioService {
 		input.put("deletedReservedScenarioList", mapper.selectDeletedReservedScenarioList(input));
 		return input;
 	}
+	
+	
 	///////////////
 	
 	
@@ -160,7 +165,6 @@ public class ScenarioService {
 	}
 	
 	public void executeScenario(Map<String, Object> input) {
-
 		input.put("workType", "SR");
 		handler.execute(input);
 	}

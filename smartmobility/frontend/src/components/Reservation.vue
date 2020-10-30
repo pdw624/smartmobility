@@ -9,7 +9,7 @@
                 <template slot="header">
                     <div class="f-row">
                         <div class="panel-title f-full">예약 시나리오 목록</div>
-                        <LinkButton @click="showDeletedScenario()">삭제된 시나리오</LinkButton>
+                        <!--LinkButton @click="showDeletedScenario()">삭제된 시나리오</LinkButton-->
                     </div>
                 </template>
 
