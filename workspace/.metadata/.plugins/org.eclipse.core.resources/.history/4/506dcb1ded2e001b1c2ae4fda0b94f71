@@ -1,0 +1,14 @@
+server.port: 3000
+
+spring:
+  datasource:
+    url: jdbc:log4jdbc:sqlite:smartmobility.db
+    username: test
+    password: test
+    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy 
+
+logging:
+  level:
+    org:
+      springframework:
+        cache: TRACE

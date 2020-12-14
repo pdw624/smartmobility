@@ -75,7 +75,8 @@ export default {
         handleDownload: function() {
             if(this.isNullEvent(this.events.download.event))
                 this.events.download.event()
-        }
+        },
+    
     }
 }
 </script>

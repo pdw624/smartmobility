@@ -29,11 +29,15 @@ export default new Router({
 		},
 		{
 			path: '/totalInfo',
-			component: () => import('../components/TotalInfo.vue')
+			component: () => import('../components/Totalinfo.vue')
 		},
 		{
 			path: '/chart',
 			component: () => import('../components/Chart.vue')
+		},
+		{
+			path: '/query',
+			component: () => import('../components/Query.vue')
 		}
 	]
 })

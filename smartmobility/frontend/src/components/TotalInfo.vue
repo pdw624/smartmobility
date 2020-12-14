@@ -33,12 +33,13 @@
                 <Layout ref="container">
                     <LayoutPanel region="north" title="수행결과" style="width: 100%; height: 380px;">
                         graph1
+                        
                     </LayoutPanel>
                     
                     <LayoutPanel region="west" style="width: 100%; height: 380px;">
                         graph2
                     </LayoutPanel>
-
+                    
                 </Layout>
             </LayoutPanel>
         </Layout>

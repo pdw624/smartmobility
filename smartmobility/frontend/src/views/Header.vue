@@ -8,8 +8,13 @@
             </el-col>
             <el-col :span="12">
                 <el-menu :router="true" :default-active="activeIndex" mode="horizontal">
+
                     <el-menu-item @click="openTokenForm()">
                         API키 설정
+                    </el-menu-item>
+
+                    <el-menu-item index="/chart">
+                        통계 그래프
                     </el-menu-item>
 
                     <el-menu-item index="/statistics">
@@ -28,14 +33,12 @@
                         동작설정
                     </el-menu-item>
                     <!--테스트-->
-                     <!--el-menu-item index="/totalInfo">
+                    <!--el-menu-item index="/totalInfo">
                         종합집계
-                    </el-menu-item>
-
-
-                     <el-menu-item index="/chart">
-                        통계 그래프
                     </el-menu-item-->
+
+
+                    
 
                 </el-menu>
             </el-col>

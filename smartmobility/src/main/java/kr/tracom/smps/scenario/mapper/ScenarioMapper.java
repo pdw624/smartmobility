@@ -14,11 +14,12 @@ public interface ScenarioMapper {
 	int deleteScenarioAction(Map<String, Object> input);
 	
 	//park
-	List<Map<String, Object>> selectDeletedReservedScenarioList(Map<String, Object> input);
-	int insertReserve(Map<String, Object> input);
+	//List<Map<String, Object>> selectScenarioActionList(Map<String, Object> input);
 	List<Map<String, Object>> selectReservedScenarioList(Map<String, Object> input);
-	int updateReserveScenario(Map<String, Object> input);
+	List<Map<String, Object>> selectDeletedReservedScenarioList(Map<String, Object> input);
 	String selectLastReserveId(Map<String, Object> input);
+	int insertReserve(Map<String, Object> input);
+	int updateReserveScenario(Map<String, Object> input);
 	int updateDeleteReserve(Map<String, Object> input);
-	//int insertReserveAction(Map<String, Object> input);
+	//int insertReserveScenarioAction(Map<String, Object> input);
 }

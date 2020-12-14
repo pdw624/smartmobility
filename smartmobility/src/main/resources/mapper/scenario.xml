@@ -31,7 +31,7 @@
 			DEL_YN = 'N'
 	</select>
 	
-	<select id="selectScenarioActionList" resultMap="actionVO">
+	<!-- select id="selectScenarioActionList" resultMap="actionVO">
 		SELECT
 			  C.ACT_ID 		AS actionId
 			, A.ACT_NAME	AS actionName
@@ -50,7 +50,7 @@
 			AND A.DEL_YN = 'N'
 		WHERE
 			C.SNR_ID = #{scenarioId}
-	</select>
+	</select-->
 	
 	<select id="selectDeletedScenarioList" resultType="hashmap">
 		SELECT
@@ -126,13 +126,16 @@
 			  SNR_ID
 			, SNR_NAME
 			, RSRV_TIME
+			, RSRV_END 
 			, STATUS
-
+			, SESSION_ID<!--  -->
 		) VALUES (
 			  #{scenario.scenarioId}
 			, #{scenario.scenarioName}
 			, #{scenario.reserveTime}
+			, #{scenario.reserveEnd}  
 			, ''
+			, #{scenario.sessionId}<!--  -->
 
 		)
 	</insert>
@@ -143,7 +146,9 @@
 		  	, SNR_ID		AS scenarioId
 			, SNR_NAME		AS scenarioName
 			, RSRV_TIME		AS reserveTime
+			, RSRV_END		AS reserveEnd
 			, STATUS		AS status
+			, SESSION_ID	AS sessionId
 		FROM
 			SMPS_COMM_RSRV
 		WHERE
@@ -154,7 +159,8 @@
 	<update id="updateReserveScenario" parameterType="hashmap">
 		UPDATE SMPS_COMM_RSRV
 		SET
-			  STATUS		= #{scenario.status}
+			  STATUS		= #{scenario.status},
+			  RSRV_END		= #{scenario.reserveEnd}
 		WHERE
 			RSRV_ID = #{scenario.reserveId}
 	</update>
@@ -185,6 +191,28 @@
 			SMPS_COMM_RSRV
 		WHERE
 			CAN_YN = 'Y'
+	</select>
+	
+	
+	<select id="selectScenarioActionList" resultType="hashmap">
+		SELECT
+			  C.ACT_ID 		AS actionId
+			, A.ACT_NAME	AS actionName
+			, A.USR_CNT		AS userCount
+			, A.TIMESET		AS timeSet
+			, A.ACT_CNT		AS loopCount
+			, A.TARGET_URL	AS url
+			, A.ENCODING	AS encoding
+			, A.TRANS_TYPE	AS type
+			, A.TIMEOUT		AS timeout
+			, A.PARAMS		AS parameter
+		FROM
+			SMPS_COMM_CONT C
+			INNER JOIN SMPS_COMM_ACT A
+			ON C.ACT_ID = A.ACT_ID
+			AND A.DEL_YN = 'N'
+		WHERE
+			C.SNR_ID = #{scenarioId}
 	</select>
 	
 	

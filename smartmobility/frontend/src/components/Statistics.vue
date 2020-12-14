@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Layout style="width: 100%; height: 800px">
+        <Layout style="width: 100%;">
             <LayoutPanel region="north" :border="false" style="height: 45px; text-align: right;">
                 <Buttons :buttonEvents="buttonEvents"/>
             </LayoutPanel>
@@ -87,12 +87,15 @@
                         
                     </LayoutPanel>
                     
-                    <LayoutPanel region="center" style="width: 100%; height: 550px;">
+                    <LayoutPanel region="center" style="width: 100%; height: 620px;">
                         <div style="width: 100%; text-align: center; margin-top: 10px;">
-                            {{ chartTitle }}
-                            <div style="float:right">
+                            <div style="width:100%">
+                                    {{ chartTitle }}
+                            </div>
+            
+                            <div align="right">
                                 <label>단위</label>&nbsp &nbsp
-                                <el-select v-model="value" placeholder="Select" style="width:40%; height:20px" @change="xaxisChange()">
+                                <el-select v-model="value" placeholder="Select" style="width:10%; margin-right: 10px;" @change="xaxisChange()">
                                     <el-option 
                                     
                                     v-for="item in options"
@@ -107,7 +110,7 @@
                         </div>
                         
                         <div id="chart">
-                            <apexchart id="lineChart" ref="lineChart" type="line" height="280" :options="chartOptions" :series="series" />
+                            <apexchart id="lineChart" ref="lineChart" type="line" height="250" :options="chartOptions" :series="series" />
                             <!-- <apexchart id="pieChart"  ref="pieChart" type="pie" width="300" height="300" :options="pieChartOptions" :series="pieSeries" /> -->
                         </div>
                         <DataGrid
@@ -120,7 +123,7 @@
                             :columnResizing="true"
                             :border="false"
                             @rowDblClick="dbClickResult"
-                            style="width: 100%; height: 200px;">
+                            style="width: 100%; height: 260px;">
 
                             <GridColumn cellCss="datagrid-td-rownumber" width="60" align="center">
                                 <template slot="header">
@@ -259,7 +262,7 @@ export default {
                 },
                 xaxis: {
                     title: {
-                        text: 'Second'
+                        text: 'Minute : Second'
                     },
                     labels: {
                         //show: false,
@@ -364,7 +367,7 @@ export default {
                 })
 
                 //park
-                console.log("timeout 찾기..",response.data.historyList)//
+                //console.log("timeout 찾기..",response.data.historyList)//
                 this.statisticArr = response.data.historyList
 
                 this.data = response.data.historyList
@@ -378,12 +381,12 @@ export default {
         xaxisChange(){
             var multipleVal = this.value
             
-            console.log("zz",multipleVal)
+            //console.log("zz",multipleVal)
             var tickTemp = (arrLabel.length-1)*parseFloat(multipleVal)//곱해줄 값을 input 값으로 받자! select 해서 받도록 단위 1초(1), 10초(0.1), 60초(0.6), 3600초(0.00027) 
-            console.log("max-min",(arrLabel.length-1))
-            console.log("parseFloat(multipleVal)",parseFloat(multipleVal))
-            console.log("tickTemp",tickTemp)
-            console.log(tickTemp.toFixed(6))
+            //console.log("max-min",(arrLabel.length-1))
+            //console.log("parseFloat(multipleVal)",parseFloat(multipleVal))
+            //console.log("tickTemp",tickTemp)
+            //console.log(tickTemp.toFixed(6))
             this.$refs.lineChart.updateOptions({
                 xaxis: {
                     //categories: categories
@@ -461,20 +464,22 @@ export default {
      
                         
                     })
-                    console.log("timout 옮겨갔는지 확인",this.statisticArr)//확인 -> 모든 실행목록임 매칭시켜야함
+                    //console.log("결과데이터", this.logData)
 
-                    console.log('시작 시간:'+  start)
-                    console.log('종료 시간:'+  end)
-                    console.log('최대 응답 시간:'+  maxResTime)
-                    console.log('최소 응답 시간:'+  minResTime)
-                    console.log('전체 수행 횟수:'+  this.logData.length)
-                    console.log('성공 횟수:'+  this.statisticArr[this.focusIndex].successCount)
-                    console.log('실패 횟수:'+  this.statisticArr[this.focusIndex].failCount)
+                    //console.log("timout 옮겨갔는지 확인",this.statisticArr)//확인 -> 모든 실행목록임 매칭시켜야함
+
+                    //console.log('시작 시간:'+  start)
+                    //console.log('종료 시간:'+  end)
+                    //console.log('최대 응답 시간:'+  maxResTime)
+                    //console.log('최소 응답 시간:'+  minResTime)
+                    //console.log('전체 수행 횟수:'+  this.logData.length)
+                    //console.log('성공 횟수:'+  this.statisticArr[this.focusIndex].successCount)
+                    //console.log('실패 횟수:'+  this.statisticArr[this.focusIndex].failCount)
                     this.tableData[0].data1 = start
                     this.tableData[0].data2 = end
                     this.tableData[1].data1 = maxResTime
                     this.tableData[1].data2 = minResTime
-                    this.tableData[2].data1 = this.logData.length
+                    this.tableData[2].data1 = this.logTotalCount//this.logData.length
                     this.tableData[2].data2 = this.statisticArr[this.focusIndex].successCount
                     this.tableData[2].data3 = this.statisticArr[this.focusIndex].failCount
                     /*************************************************** 라인 차트 데이터 가공 *****************************************************/
@@ -492,7 +497,8 @@ export default {
                     })
 
                     arrLabel = categories
-                    console.log("내 라벨", arrLabel)
+                    //console.log("내 라벨", arrLabel)
+                    
                     // console.log("내 라벨 길이", arrLabel.length)
                     // console.log("인덱스 마지막 : ",(arrLabel.length-1)*0.1)
 
@@ -525,9 +531,9 @@ export default {
                         data: arrCountEndRequest
                     })
 
-                    console.log(series)
-                    console.log(sumEndRequest)
-                    console.log(graphList.length)
+                    //console.log(series)
+                    //console.log(sumEndRequest)
+                    //console.log(graphList.length)
                     this.$refs.lineChart.updateSeries(series)
                     this.chartTitle = '평균 TPS: ' + Math.round((sumEndRequest / graphList.length))
 

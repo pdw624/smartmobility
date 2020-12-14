@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Layout style="width: 100%; height: 800px">
+        <Layout style="width: 100%;">
             <LayoutPanel region="north" :border="false" style="height: 45px; text-align: right;">
                 <Buttons :buttonEvents="buttonEvents"/>
             </LayoutPanel>
@@ -83,8 +83,8 @@
                     </div>
 
                     <el-form-item label="예약날짜" prop="reserveTime" >
-                        <el-input v-model="scenarioForm.reserveTime" placeholder="2020/10/20_14:30" :disabled="this.isAddClicked" style="width:10%"></el-input>
-                        <label style="margin-left:10px; color:#BDBDBD"> ex) 2020/09/27_02:14 </label>
+                        <el-input v-model="scenarioForm.reserveTime" placeholder="2020/10/20_14:30" :disabled="this.isAddClicked" style="width:15%"></el-input>
+                        <label style="margin-left:10px; color:#BDBDBD"> ex) 2020/09/27_02:14 (년/월/일_시:분)</label>
                     </el-form-item>
                    
                    
@@ -189,7 +189,17 @@ export default {
                 ],
                 loopCount: [
                     { required: true, message: '반복횟수를 입력해주세요', trigger: 'blur' }
-                ]
+                ],
+                reserveTime: [
+                    /*{ required: true, message: '예약날짜를 입력해주세요', trigger: 'blur' }*/,
+                    // {
+                    //     validator: (rule, value, callback) => {
+                    //         var regex = /^(19|20)\d{2}\/(0[1-9]|1[012])\/(0[1-9]|[12][0-9]|3[0-1])_([1-9]|[01][0-9]|2[0-3]):([0-5][0-9])$/
+                    //         String(value).match(regex) ? callback() : callback(new Error('예약 날짜 형식에 맞게 작성해주세요.'))
+                            
+                    //     }
+                    // }
+                ],
             },
             data: [],
             deletedScenarioData: [],
@@ -201,7 +211,10 @@ export default {
             dialogDeletedScenario: false,
             deletedLoading: false,
             //park
-            isAddClicked: false
+            isAddClicked: false,
+            isReserved : false,
+            index : 0,
+            scList : []
         }
     },
 
@@ -288,6 +301,8 @@ export default {
             this.allChecked = this.checkedRows.length === this.data.length
             this.rowClicked = true
             this.$nextTick(() => (this.rowClicked = false))
+
+            //console.log('야야야',this.checkedRows)
         },
 
         // 시나리오 폼 초기화
@@ -298,8 +313,7 @@ export default {
 
         // 시나리오목록에서 시나리오 클릭시 이벤트
         scenarioClick(row) {
-            
-
+            this.scList = []//park
             this.isUpdate = true
 
             if(row) {
@@ -308,7 +322,11 @@ export default {
                 var copy = Object.assign({}, row)
 
                 this.scenarioForm = copy
-
+                
+                //park
+                this.scList.push(copy)
+                
+                //
                 var actionIds = []
 
                 for(var i = 0; i < row.actionList.length; i++)
@@ -320,134 +338,338 @@ export default {
 
         // 시나리오 폼에서 저장버튼 클릭시 이벤트
         saveScenario(form) {
-            this.$refs[form].validate(valid => {
-                if(valid) {
-                    if(this.registerAction.length == 0) {
-                        this.notification('saveScenarioCheck')
-                        return false
-                    }
 
-                    var params = {
-                        scenario: {
-                            scenarioName: this.scenarioForm.scenarioName,
-                            loopCount: this.scenarioForm.loopCount,
-                            userCount: this.scenarioForm.userCount
-                        },
-                        actionIds: this.registerAction
-                    }
+            var isRun = false;
+            this.axios.post('/api/v1/scenario/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    this.$refs[form].validate(valid => {
+                        if(valid) {
+                            if(this.registerAction.length == 0) {
+                                this.notification('saveScenarioCheck')
+                                return false
+                            }
 
-                    if(this.isUpdate) {
-                        params.scenario['scenarioId'] = this.scenarioForm.scenarioId
-                        this.axios.put('/api/v1/scenario', params).then(response => {
-                            this.loadGrid()
-                            this.notification('saveScenario')
-                        })
-                    } else {
-                        this.axios.post('/api/v1/scenario', params).then(response => {
-                            this.loadGrid(true)
-                            this.notification('saveScenario')
-                        })
-                    }
-                } else {
-                    return false
+                            var params = {
+                                scenario: {
+                                    scenarioName: this.scenarioForm.scenarioName,
+                                    loopCount: this.scenarioForm.loopCount,
+                                    userCount: this.scenarioForm.userCount
+                                },
+                                actionIds: this.registerAction
+                            }
+
+                            if(this.isUpdate) {
+                                params.scenario['scenarioId'] = this.scenarioForm.scenarioId
+                                this.axios.put('/api/v1/scenario', params).then(response => {
+                                    this.loadGrid()
+                                    this.notification('saveScenario')
+                                })
+                            } else {
+                                this.axios.post('/api/v1/scenario', params).then(response => {
+                                    this.loadGrid(true)
+                                    this.notification('saveScenario')
+                                })
+                            }
+                        } else {
+                            return false
+                        }
+                    })
                 }
+                    
             })
+
+
+
+
+
+
+
+            // this.$refs[form].validate(valid => {
+            //     if(valid) {
+            //         if(this.registerAction.length == 0) {
+            //             this.notification('saveScenarioCheck')
+            //             return false
+            //         }
+
+            //         var params = {
+            //             scenario: {
+            //                 scenarioName: this.scenarioForm.scenarioName,
+            //                 loopCount: this.scenarioForm.loopCount,
+            //                 userCount: this.scenarioForm.userCount
+            //             },
+            //             actionIds: this.registerAction
+            //         }
+
+            //         if(this.isUpdate) {
+            //             params.scenario['scenarioId'] = this.scenarioForm.scenarioId
+            //             this.axios.put('/api/v1/scenario', params).then(response => {
+            //                 this.loadGrid()
+            //                 this.notification('saveScenario')
+            //             })
+            //         } else {
+            //             this.axios.post('/api/v1/scenario', params).then(response => {
+            //                 this.loadGrid(true)
+            //                 this.notification('saveScenario')
+            //             })
+            //         }
+            //     } else {
+            //         return false
+            //     }
+            // })
         },
 
         //실행 유무 확인
-        isExecuted(){
-            // var params={
-            //     eF:""
-            // },
+        // isExecuted(){
+        //     // var params={
+        //     //     eF:""
+        //     // },
 
-            this.axios.get('/api/v1/scenario/reserve/exflag').then(exflag => {
-                //console.log('실행?????', Boolean(exflag))
-                //eF=exflag
-                console.log('실행?????', exflag.data)
-            })
+        //     this.axios.get('/api/v1/scenario/reserve/exflag').then(exflag => {
+        //         //console.log('실행?????', Boolean(exflag))
+        //         //eF=exflag
+        //         console.log('실행?????', exflag.data)
+        //     })
             
-        },
+        // },
     
         // 시나리오 폼에서 예약버튼 클릭 시 이벤트 - park
         reserveScenario(form) {
-            this.$refs[form].validate(valid => {
-                if(valid) {
-                    if(this.registerAction.length == 0) {
-                        this.notification('saveReserveScenarioCheck')
-                        return false
-                    }
-
-                    var params = {
-                        scenario: {
-                            scenarioName: this.scenarioForm.scenarioName,
-                            loopCount: this.scenarioForm.loopCount,
-                            userCount: this.scenarioForm.userCount,
-                            reserveTime : this.scenarioForm.reserveTime,
-                            status : this.scenarioForm.status,
-                            scenarioList: this.checkedRows
-                        },
-                        actionIds: this.registerAction
-                    }
-                    //asdsad
-                    
-                     if(this.checkedRows.length == 0) {
-                        this.notification('executeScenarioCheck')
-                    }else{
-                        if(this.isUpdate) {
-                        params.scenario['reserveId'] = this.scenarioForm.reserveId
-                        console.log('예약 아이디'+this.scenarioForm.reserveId)
-                        console.log('시나리오 아이디'+this.scenarioForm.scenarioId)
-                            this.axios.post('/api/v1/scenario/reserve', params).then(response => {
-                                console.log("최종",response.data)
-                                if (response.data.overlaps != null){
-                                    // 메시지 띄우는 로직
-                                    //alert("중복임...");
-                                    this.notification('overlapReserveScenario')
-                                    return;
-                                }
-                                this.loadGrid()
-                                this.notification('saveScenario')
-                                //park 추가
-                                this.setIsExecute({
-                                    //isExecute: true,
-                                    //message: '동작이 실행중입니다'
-                                })
+           
+            var isRun = false;
+            this.axios.post('/api/v1/scenario/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    this.isReserved = true
+                    this.$refs[form].validate(valid => {
+                        if(valid) {
+                            // if(this.registerAction.length == 0) {
+                            //     this.notification('saveReserveScenarioCheck')
+                            //     return false
+                            // }
+                            
+                            var params = {
+                                scenario: {
+                                    scenarioName: this.scenarioForm.scenarioName,
+                                    loopCount: this.scenarioForm.loopCount,
+                                    userCount: this.scenarioForm.userCount,
+                                    reserveTime : this.scenarioForm.reserveTime,
+                                    status : this.scenarioForm.status,
+                                    //scenarioList: this.checkedRows
+                                    scenarioList: this.scList
+                                },
+                                actionIds: this.registerAction
+                            }
+                            //console.log("실제 보내지는 데이터 꼴 ",this.checkedRows)
+                            //asdsad
+                            var regex = /^(19|20)\d{2}\/(0[1-9]|1[012])\/(0[1-9]|[12][0-9]|3[0-1])_([1-9]|[01][0-9]|2[0-3]):([0-5][0-9])$/
                                 
-                                // this.setIsReserve({
-                                //     isReserve: true,
-                                //     message: '예약 대기중입니다.'
-                                // })
-                            })
+                            if(this.scenarioForm.reserveTime == null || !String(this.scenarioForm.reserveTime).match(regex)) {
+                                this.notification('reserveTimeCheck')//예약시간 미입력 및 잘못 입력 시
+                                //lert("예약시간 입력해!")
+                                
+                                return
+                            }else{
+                                if(this.isUpdate) {
+                                params.scenario['reserveId'] = this.scenarioForm.reserveId
+                                //console.log('예약 아이디'+this.scenarioForm.reserveId)
+                                //console.log('시나리오 아이디'+this.scenarioForm.scenarioId)
+                                    this.axios.post('/api/v1/scenario/reserve', params).then(response => {
+                                        //console.log("최종1",response.data)
+                                        //
+                                        //console.log("executeFlag   ",response.data.executeFlag)
+                                        //scenarioExecute = response.data.executeFlag
+                                        //
+                                        if (response.data.overlaps != null){
+                                            // 메시지 띄우는 로직
+                                            //alert("중복임...");
+                                            this.notification('overlapReserveScenario')
+                                            return;
+                                        }
+                                        if (response.data.executeFlag != null){
+                                            // 메시지 띄우는 로직
+                                            this.notification('isExecuteReserveScenario')
+                                            
+                                            return;
+                                        }
+                                        this.loadGrid()
+                                        this.notification('saveScenario')
+                                        //park 추가
+                                        this.setIsExecute({
+                                            //isExecute: true,
+                                            //message: '동작이 실행중입니다'
+                                        })
+                                        
+                                        // this.setIsReserve({
+                                        //     isReserve: true,
+                                        //     message: '예약 대기중입니다.'
+                                        // })
+                                    })
+                                
+                                //localStorage.setItem('reserveList', JSON.stringify(params));
+                            
+                                } else {
+                                    this.axios.post('/api/v1/scenario/reserve', params).then(response => {
+                                        //console.log("최종2",response.data)
+                                        if (response.data.overlaps != null){
+                                            // 메시지 띄우는 로직
+                                            //alert("중복임...");
+                                            this.notification('overlapReserveScenario')
+                                            return;
+                                        }
+                                        if (response.data.executeFlag != null){
+                                            // 메시지 띄우는 로직
+                                            this.notification('isExecuteReserveScenario')
+                                            
+                                            return;
+                                        }
+                                        this.loadGrid(true)
+                                        this.notification('saveScenario')
+                                        //park 추가
+                                        this.setIsExecute({
+                                            //isExecute: true,
+                                            //message: '동작이 실행중입니다'
+                                        })
+                                    
+                                        // this.setIsReserve({
+                                        //     isReserve: true,
+                                        //     message: '예약 대기중입니다.'
+                                        // })
+                                    })
+                                }
+                            }
                             
                         } else {
-                            this.axios.post('/api/v1/scenario/reserve', params).then(response => {
-                                console.log("최종",response.data)
-                                if (response.data.overlaps != null){
-                                    // 메시지 띄우는 로직
-                                    //alert("중복임...");
-                                    this.notification('overlapReserveScenario')
-                                    return;
-                                }
-                                this.loadGrid(true)
-                                this.notification('saveScenario')
-                                //park 추가
-                                this.setIsExecute({
-                                    //isExecute: true,
-                                    //message: '동작이 실행중입니다'
-                                })
-                               
-                                // this.setIsReserve({
-                                //     isReserve: true,
-                                //     message: '예약 대기중입니다.'
-                                // })
-                            })
+                            return false
                         }
-                    }
-                    
-                } else {
-                    return false
+                    })
                 }
+                    
             })
+
+
+
+
+
+
+
+
+
+            // this.isReserved = true
+            // this.$refs[form].validate(valid => {
+            //     if(valid) {
+            //         // if(this.registerAction.length == 0) {
+            //         //     this.notification('saveReserveScenarioCheck')
+            //         //     return false
+            //         // }
+                    
+            //         var params = {
+            //             scenario: {
+            //                 scenarioName: this.scenarioForm.scenarioName,
+            //                 loopCount: this.scenarioForm.loopCount,
+            //                 userCount: this.scenarioForm.userCount,
+            //                 reserveTime : this.scenarioForm.reserveTime,
+            //                 status : this.scenarioForm.status,
+            //                 //scenarioList: this.checkedRows
+            //                 scenarioList: this.scList
+            //             },
+            //             actionIds: this.registerAction
+            //         }
+            //         //console.log("실제 보내지는 데이터 꼴 ",this.checkedRows)
+            //         //asdsad
+            //         var regex = /^(19|20)\d{2}\/(0[1-9]|1[012])\/(0[1-9]|[12][0-9]|3[0-1])_([1-9]|[01][0-9]|2[0-3]):([0-5][0-9])$/
+                        
+            //         if(this.scenarioForm.reserveTime == null || !String(this.scenarioForm.reserveTime).match(regex)) {
+            //             this.notification('reserveTimeCheck')//예약시간 미입력 및 잘못 입력 시
+            //             //lert("예약시간 입력해!")
+                        
+            //             return
+            //         }else{
+            //             if(this.isUpdate) {
+            //             params.scenario['reserveId'] = this.scenarioForm.reserveId
+            //             //console.log('예약 아이디'+this.scenarioForm.reserveId)
+            //             //console.log('시나리오 아이디'+this.scenarioForm.scenarioId)
+            //                 this.axios.post('/api/v1/scenario/reserve', params).then(response => {
+            //                     //console.log("최종1",response.data)
+            //                     //
+            //                     //console.log("executeFlag   ",response.data.executeFlag)
+            //                     //scenarioExecute = response.data.executeFlag
+            //                     //
+            //                     if (response.data.overlaps != null){
+            //                         // 메시지 띄우는 로직
+            //                         //alert("중복임...");
+            //                         this.notification('overlapReserveScenario')
+            //                         return;
+            //                     }
+            //                     if (response.data.executeFlag != null){
+            //                         // 메시지 띄우는 로직
+            //                         this.notification('isExecuteReserveScenario')
+                                    
+            //                         return;
+            //                     }
+            //                     this.loadGrid()
+            //                     this.notification('saveScenario')
+            //                     //park 추가
+            //                     this.setIsExecute({
+            //                         //isExecute: true,
+            //                         //message: '동작이 실행중입니다'
+            //                     })
+                                
+            //                     // this.setIsReserve({
+            //                     //     isReserve: true,
+            //                     //     message: '예약 대기중입니다.'
+            //                     // })
+            //                 })
+                        
+            //             //localStorage.setItem('reserveList', JSON.stringify(params));
+                       
+            //             } else {
+            //                 this.axios.post('/api/v1/scenario/reserve', params).then(response => {
+            //                     //console.log("최종2",response.data)
+            //                     if (response.data.overlaps != null){
+            //                         // 메시지 띄우는 로직
+            //                         //alert("중복임...");
+            //                         this.notification('overlapReserveScenario')
+            //                         return;
+            //                     }
+            //                     if (response.data.executeFlag != null){
+            //                         // 메시지 띄우는 로직
+            //                         this.notification('isExecuteReserveScenario')
+                                    
+            //                         return;
+            //                     }
+            //                     this.loadGrid(true)
+            //                     this.notification('saveScenario')
+            //                     //park 추가
+            //                     this.setIsExecute({
+            //                         //isExecute: true,
+            //                         //message: '동작이 실행중입니다'
+            //                     })
+                               
+            //                     // this.setIsReserve({
+            //                     //     isReserve: true,
+            //                     //     message: '예약 대기중입니다.'
+            //                     // })
+            //                 })
+            //             }
+            //         }
+                    
+            //     } else {
+            //         return false
+            //     }
+            // })
         },
 
         // 시나리오 추가 버튼 클릭시
@@ -463,44 +685,88 @@ export default {
 
         // 시나리오 삭제 버튼 클릭시
         deleteScenario() {
-            if(this.checkedRows.length == 0) {
-                this.notification('deleteScenarioCheck')
-            } else {
-                this.$confirm('체크한 시나리오들을 삭제하시겠습니까?', {
-                    confirmButtonText: '삭제',
-                    cancelButtonText: '취소',
-                    type: 'warning'
-                }).then(() => {
-                    var scenarioIds = []
-                    this.checkedRows.forEach(row => scenarioIds.push(row.scenarioId))
 
-                    this.axios.delete('/api/v1/scenario', {
-                        data: {
-                            scenarioIds: scenarioIds
-                        }
-                    }).then(response => {
-                        if(response.data) {
-                            this.loadGrid(true)
-                            this.notification('deleteScenario')
-                        }
-                    }).catch(ex => {
-                        this.notification('deleteScenarioError')
-                    })
-                })
-            }
+            var isRun = false;
+            this.axios.post('/api/v1/scenario/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    if(this.checkedRows.length == 0) {
+                        this.notification('deleteScenarioCheck')
+                    } else {
+                        this.$confirm('체크한 시나리오들을 삭제하시겠습니까?', {
+                            confirmButtonText: '삭제',
+                            cancelButtonText: '취소',
+                            type: 'warning'
+                        }).then(() => {
+                            var scenarioIds = []
+                            this.checkedRows.forEach(row => scenarioIds.push(row.scenarioId))
+
+                            this.axios.delete('/api/v1/scenario', {
+                                data: {
+                                    scenarioIds: scenarioIds
+                                }
+                            }).then(response => {
+                                if(response.data) {
+                                    this.loadGrid(true)
+                                    this.notification('deleteScenario')
+                                }
+                            }).catch(ex => {
+                                this.notification('deleteScenarioError')
+                            })
+                        })
+                    }
+                }
+                    
+            })
+
+
+
+
+
+
+
+            // if(this.checkedRows.length == 0) {
+            //     this.notification('deleteScenarioCheck')
+            // } else {
+            //     this.$confirm('체크한 시나리오들을 삭제하시겠습니까?', {
+            //         confirmButtonText: '삭제',
+            //         cancelButtonText: '취소',
+            //         type: 'warning'
+            //     }).then(() => {
+            //         var scenarioIds = []
+            //         this.checkedRows.forEach(row => scenarioIds.push(row.scenarioId))
+
+            //         this.axios.delete('/api/v1/scenario', {
+            //             data: {
+            //                 scenarioIds: scenarioIds
+            //             }
+            //         }).then(response => {
+            //             if(response.data) {
+            //                 this.loadGrid(true)
+            //                 this.notification('deleteScenario')
+            //             }
+            //         }).catch(ex => {
+            //             this.notification('deleteScenarioError')
+            //         })
+            //     })
+            // }
         },
 
         // 시나리오 실행 버튼 클릭시
         executeScenario() {
             var scenarioExecute = false;
-            var soonExecute = false;
-
+            
             this.axios.post('/api/v1/scenario/checkScenario',/*추가!*/{scenarioList: this.checkedRows}).then(response => {
-                console.log("bbbbbbbbbbbb   ",response.data.executeFlag)
-                console.log("soon Flag!!!!!!!!!!!   ",response.data.soonFlag)
-                scenarioExecute = response.data.executeFlag
-                soonExecute = response.data.soonFlag
+                //console.log("executeFlag   ",response.data.executeFlag)
 
+                scenarioExecute = response.data.executeFlag
+                
                 // if(scenarioExecute == true || soonExecute == true){
                 //     if (scenarioExecute == true){
                 //         // 메시지 띄우는 로직
@@ -560,20 +826,56 @@ export default {
 
         // 시나리오 복원 버튼 클릭시
         recoveryScenario(row) {
-            this.$confirm('시나리오를 복원하시겠습니까?', '시나리오복원', {
-                confirmButtonText: '복원',
-                cancelButtonText: '취소',
-                type: 'info'
-            }).then(() => {
-                this.axios.post('/api/v1/scenario/recovery', {
-                    scenarioIds: [row.scenarioId]
-                }).then(response => {
-                    this.loadGrid()
-                    this.loadDeletedGrid()
-                }).catch(() => {
+            var isRun = false;
+            this.axios.post('/api/v1/scenario/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    this.$confirm('시나리오를 복원하시겠습니까?', '시나리오복원', {
+                        confirmButtonText: '복원',
+                        cancelButtonText: '취소',
+                        type: 'info'
+                    }).then(() => {
+                        this.axios.post('/api/v1/scenario/recovery', {
+                            scenarioIds: [row.scenarioId]
+                        }).then(response => {
+                            this.loadGrid()
+                            this.loadDeletedGrid()
+                        }).catch(() => {
 
-                })
+                        })
+                    })
+                }
+                    
             })
+
+
+
+
+
+
+
+
+
+            // this.$confirm('시나리오를 복원하시겠습니까?', '시나리오복원', {
+            //     confirmButtonText: '복원',
+            //     cancelButtonText: '취소',
+            //     type: 'info'
+            // }).then(() => {
+            //     this.axios.post('/api/v1/scenario/recovery', {
+            //         scenarioIds: [row.scenarioId]
+            //     }).then(response => {
+            //         this.loadGrid()
+            //         this.loadDeletedGrid()
+            //     }).catch(() => {
+
+            //     })
+            // })
         },
     }
 }

@@ -13,4 +13,7 @@ public interface StatisticsMapper {
 	public String selectLastWorkSeq(Map<String, Object> input);
 	public int insertHistory(Map<String, Object> input);
 	public int insertResult(Map<String, Object> input);
+	
+	//park
+	public List<Map<String, Object>> selectHeatGraphList(Map<String, Object> input);
 }

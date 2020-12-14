@@ -28,6 +28,14 @@
 		<result property="countEndRequest" column="COUNT_END_REQUEST"/>
 	</resultMap>
 	
+	<!-- park -->
+	<resultMap id="heatGraphVO" type="hashmap">
+		<result property="minSec" column="minSec"/>
+		<result property="rstType" column="rstType"/>
+		<result property="rowNum" column="rowNum"/>
+	</resultMap>
+	<!-- park -->
+	
 	<select id="selectHistoryList" resultMap="historyResult">
 		SELECT
 			  H.WORK_SEQ	AS workSeq
@@ -74,6 +82,8 @@
 			, END_DATETIME AS endDatetime
 			, RES_TIME AS resTime
 			, RST_CONT AS rstContent
+			
+			<!--, TIMEOUT AS timeout park -->
 		FROM
 			SMPS_WORK_RST
 		WHERE
@@ -83,7 +93,7 @@
 	
 	<select id="selectGraphList" parameterType="hashmap" resultMap="graphVO">
 		SELECT
-			  STRFTIME('%S', RESULT_TIME) AS RESULT_TIME
+			  STRFTIME('%M:%S', RESULT_TIME) AS RESULT_TIME
 			, SUM(COUNT_START_REQUEST) AS COUNT_START_REQUEST
 			, SUM(COUNT_END_REQUEST) AS COUNT_END_REQUEST
 		FROM
@@ -176,6 +186,8 @@
 			, END_DATETIME
 			, RES_TIME
 			, RST_CONT
+			
+			<!--, TIMEOUT park -->
 		)
 		VALUES
 		<foreach collection="resultList" item="item" separator=",">
@@ -187,7 +199,28 @@
 			, #{item.endDatetime}
 			, #{item.resTime}
 			, #{item.rstContent}
+			
+			<!--, #{item.timeout} park -->
 		)
 		</foreach>
 	</insert>
+	
+	
+	<!-- park -->
+	<select id="selectHeatGraphList" parameterType="hashmap" resultMap="heatGraphVO">
+		SELECT 
+			SUBSTR(START_DATETIME,15, 5)AS MIN_SEC , CASE RST_TYPE WHEN 'SUCCESS' THEN '1' ELSE '0' END AS RST_TYPES,
+			row_number() OVER(
+				PARTITION BY SUBSTR(START_DATETIME,15, 5)
+				ORDER BY START_DATETIME
+			) RowNum
+	
+		FROM SMPS_WORK_RST
+		WHERE WORK_SEQ = #{workSeq} ORDER BY RowNum ASC
+		
+	</select>
+	<!-- park -->
+	
+	
+	
 </mapper>

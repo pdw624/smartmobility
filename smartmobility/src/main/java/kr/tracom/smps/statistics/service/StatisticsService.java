@@ -20,5 +20,6 @@ public class StatisticsService {
 	public void selectResultList(Map<String, Object> input) {
 		input.put("resultList", mapper.selectResultList(input));
 		input.put("graphList", mapper.selectGraphList(input));
+		input.put("heatGraphList",mapper.selectHeatGraphList(input));
 	}
 }

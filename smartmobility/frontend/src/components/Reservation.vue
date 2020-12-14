@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Layout style="width: 100%; height: 800px">
+        <Layout style="width: 100%;">
             <LayoutPanel region="north" :border="false" style="height: 45px; text-align: right;">
                 <Buttons :buttonEvents="buttonEvents"/>
             </LayoutPanel>
@@ -42,6 +42,7 @@
                     </GridColumn>
                     <GridColumn field="scenarioName" title="시나리오명" halign="60"></GridColumn>
                     <GridColumn field="reserveTime" title="예약 날짜" width="center" align="center"></GridColumn>
+                    <!--GridColumn field="reserveEnd" title="예약 종료" width="center" align="center"></GridColumn-->
                     <GridColumn field="status" title="실행 유무" width="60" align="center"></GridColumn>
                 </DataGrid>
             </LayoutPanel>
@@ -95,9 +96,9 @@
                         <el-button type="info" @click="saveScenario('scenarioForm')" :disabled='true'>예약</el-button>
                     </el-form-item-->
                     
-                    <el-form-item>
+                    <!--el-form-item>
                         <el-button type="info" id="isCancel" @click="cancelReserve()">예약 삭제</el-button>
-                    </el-form-item>
+                    </el-form-item-->
                     
                 </el-form>
             </LayoutPanel>
@@ -175,10 +176,11 @@ export default {
                     show: true,
                     event: this.loadGrid
                 },
-                pause: {
+                delete: {
                     show: true,
-                    event: this.pauseScenario
-                }
+                    event: this.cancelReserve
+                },
+                
             },
             scenarioForm: {
                 scenarioName: '',
@@ -231,32 +233,77 @@ export default {
         ]),
 
         //예약 삭제 버튼 클릭 시
-        cancelReserve(form) {
-            if(this.checkedRows.length == 0) {
-                this.notification('deleteScenarioCheck')
-            } else {
-                this.$confirm('체크한 예약시나리오들을 삭제하시겠습니까? (삭제된 예약은 실행되지 않습니다.)', {
-                    confirmButtonText: '삭제',
-                    cancelButtonText: '취소',
-                    type: 'warning'
-                }).then(() => {
-                    var reserveIds = []
-                    this.checkedRows.forEach(row => reserveIds.push(row.reserveId))
+        cancelReserve() {
 
-                    this.axios.delete('/api/v1/scenario/reserve', {
-                        data: {
-                            reserveIds: reserveIds
-                        }
-                    }).then(response => {
-                        if(response.data) {
-                            this.loadGrid(true)
-                            this.notification('deleteScenario')
-                        }
-                    }).catch(ex => {
-                        this.notification('deleteScenarioError')
-                    })
-                })
-            }
+            var isRun = false;
+            this.axios.post('/api/v1/action/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    if(this.checkedRows.length == 0) {
+                        this.notification('deleteReserveCheck')
+                    } else {
+                        this.$confirm('체크한 예약시나리오들을 삭제하시겠습니까? (삭제된 예약은 실행되지 않습니다.)', {
+                            confirmButtonText: '삭제',
+                            cancelButtonText: '취소',
+                            type: 'warning'
+                        }).then(() => {
+                            var reserveIds = []
+                            this.checkedRows.forEach(row => reserveIds.push(row.reserveId))
+
+                            this.axios.delete('/api/v1/scenario/reserve', {
+                                data: {
+                                    reserveIds: reserveIds
+                                }
+                            }).then(response => {
+                                if(response.data) {
+                                    this.loadGrid(true)
+                                    this.notification('deleteReserve')
+                                }
+                            }).catch(ex => {
+                                this.notification('deleteReserveError')
+                            })
+                        })
+                    }
+                }
+                    
+            })
+
+
+
+
+
+
+            // if(this.checkedRows.length == 0) {
+            //     this.notification('deleteReserveCheck')
+            // } else {
+            //     this.$confirm('체크한 예약시나리오들을 삭제하시겠습니까? (삭제된 예약은 실행되지 않습니다.)', {
+            //         confirmButtonText: '삭제',
+            //         cancelButtonText: '취소',
+            //         type: 'warning'
+            //     }).then(() => {
+            //         var reserveIds = []
+            //         this.checkedRows.forEach(row => reserveIds.push(row.reserveId))
+
+            //         this.axios.delete('/api/v1/scenario/reserve', {
+            //             data: {
+            //                 reserveIds: reserveIds
+            //             }
+            //         }).then(response => {
+            //             if(response.data) {
+            //                 this.loadGrid(true)
+            //                 this.notification('deleteReserve')
+            //             }
+            //         }).catch(ex => {
+            //             this.notification('deleteReserveError')
+            //         })
+            //     })
+            // }
         },
         
         timer() {
@@ -349,7 +396,7 @@ export default {
                     actionIds.push(row.actionList[i].actionId)
                     
                 
-                console.log("actID:"+actionIds)
+                //console.log("actID:"+actionIds)
                 
                 this.registerAction = actionIds
                 //this.registerAction.push({disabled: })

@@ -6,12 +6,15 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.apache.tomcat.jni.Time;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import kr.tracom.smps.common.BeanUtil;
+import kr.tracom.smps.common.Util;
 import kr.tracom.smps.statistics.mapper.StatisticsMapper;
 
-public class DataHandler {
+public class DataHandler extends Thread {
+	
 	private StatisticsMapper mapper;
 	private SimpMessagingTemplate template;
 	
@@ -20,6 +23,9 @@ public class DataHandler {
 	private int count;
 	private String workType;
 	private boolean flag = false;
+
+	
+	private BlockingQueue<Map<String, Object>> tempQueue;
 	
 	public DataHandler(int size, String workType) {
 		this.mapper = (StatisticsMapper) BeanUtil.getBean(StatisticsMapper.class);
@@ -40,9 +46,14 @@ public class DataHandler {
 
 			sendWorkCount(count);
 			
+
 			if(this.size == this.count) {
 				processInsert();
 			}
+			
+			
+			
+			
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -80,11 +91,19 @@ public class DataHandler {
 		else
 			resultMessage.put("type", this.workType);
 		template.convertAndSend("/message", resultMessage);
+		
+		// delete.
+		resultMessage = null;
 	}
 	
 	private void insertResult() {
 		Map<String, Object> input = new HashMap<String, Object>();
 		input.put("resultList", new ArrayList<Map<String, Object>>(queue));
 		mapper.insertResult(input);
+		
+		// delete.
+		Object deleteObj = input.get("resultList");
+		deleteObj = null;
+		input = null;
 	}
 }

@@ -1,5 +1,7 @@
 <template>
-    <router-view />
+    <div id="wrappers" style="height:91.6vh;">
+        <router-view />
+    </div>
 </template>
 
 <script>

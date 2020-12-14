@@ -55,6 +55,7 @@ export default {
 
 	mounted() {
 		this.connect()
+		//this.reserveScenarioLoad()
 	},
 
 	computed: {
@@ -127,18 +128,58 @@ export default {
 					}, 2000)
 				}
 			)
+
+			
 		},
 
 		disconnect() {
 			if(this.stompClient)
 				this.stompClient.disconnect()
 			this.connected = false
-		}
+		},
+
+		reserveScenarioLoad() {
+            // console.log("asdfasdf", JSON.parse(localStorage.getItem('reserveList')));
+			// var pparam = JSON.parse(localStorage.getItem('reserveList'));
+
+			this.axios.post('/api/v1/scenario/startup').then(response => {
+				console.log("최종1",response.data)
+
+				if (response.data.overlaps != null){
+					// 메시지 띄우는 로직
+					//alert("중복임...");
+					this.notification('overlapReserveScenario')
+					return;
+				}
+				this.loadGrid()
+				this.notification('saveScenario')
+				//park 추가
+				this.setIsExecute({
+					//isExecute: true,
+					//message: '동작이 실행중입니다'
+				})
+				
+				// this.setIsReserve({
+				//     isReserve: true,
+				//     message: '예약 대기중입니다.'
+				// })
+				
+			})
+			// //localStorage.removeItem("reserveList");
+        },
 	}
 }
 </script>
 
 <style>
+html {
+	height: 100%;
+}
+
+body {
+	height :100%;
+}
+
 @font-face {
 	font-family: 'NanumBarunGothic';
 	src: url('./assets/font/NanumBarunGothic.eot');
@@ -148,6 +189,12 @@ export default {
 
 #app {
 	font-family: 'NanumBarunGothic', 'serif';
+	position:relative;
+	min-height:100%;
+}
+
+#wrappers > div{
+	height: 100%;
 }
 
 .message-box {

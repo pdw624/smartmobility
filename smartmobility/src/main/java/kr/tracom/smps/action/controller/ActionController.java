@@ -21,13 +21,28 @@ import org.springframework.web.bind.annotation.RestController;
 import kr.tracom.smps.action.service.ActionService;
 import kr.tracom.smps.handler.DataHandler;
 import kr.tracom.smps.handler.ExecuteHandler;
+import kr.tracom.smps.scenario.controller.ScenarioController;
 
 @RestController
 @RequestMapping("/api/v1")
 public class ActionController {
 	
+	//park
+	public static boolean exFlag;
+	
 	@Autowired
 	private ActionService service;
+	
+	// 실행체크 - 박대원
+	@PostMapping("/action/check")
+	public Map<String,Object> checkIsRun(){
+		Map<String, Object> tempInput = new HashMap<String, Object>();
+		if (ScenarioController.gExecuteFlag == true || ActionController.exFlag == true) {
+			tempInput.put("executeFlag", true);
+			return tempInput;
+		}
+		return tempInput;
+	}
 	
 	// 동작 리스트 조회
 	@GetMapping("/action")
@@ -44,6 +59,11 @@ public class ActionController {
 		 * );
 		 */
 		
+//		//park
+//		Map<String, Object> rsrvList = new HashMap<String, Object>();
+//		rsrvList = ScenarioController.selectReservedScenarioList();
+//		System.out.println("예약 리스트" + rsrvList);
+		
 		return service.selectActionList(input);
 	}
 	
@@ -57,14 +77,14 @@ public class ActionController {
 	// 동작 삽입
 	@PostMapping("/action")
 	public boolean insertAction(@RequestBody Map<String, Object> input) {
-		System.out.println(input);
+		//System.out.println(input);
 		return service.insertAction(input);
 	}
 	
 	// 동작 수정
 	@PutMapping("/action")
 	public boolean updateAction(@RequestBody Map<String, Object> input) {
-		System.out.println(input);
+		//System.out.println(input);
 		return service.updateAction(input);
 	}
 	
@@ -85,8 +105,12 @@ public class ActionController {
 	public void executeAction(@RequestBody Map<String, Object> input, HttpSession session) {
 		input.put("sessionId", session.getId());
 		System.out.println("sessionId : "+input.get("sessionId"));
-		
+		exFlag = true;//
+		//System.out.println("시작!!"+exFlag);//
 		service.executeAction(input);
+		exFlag = false;//
+		//System.out.println("종료!!"+exFlag);//
+		
 	}
 	
 	// 동작 중지

@@ -1,12 +1,14 @@
 package kr.tracom.smps.handler;
 
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.tomcat.jni.Time;
 import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClientConfig;
@@ -23,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.netty.handler.codec.http.HttpHeaders;
+import kr.tracom.smps.action.controller.ActionController;
 import kr.tracom.smps.base.mapper.BaseMapper;
 import kr.tracom.smps.common.Util;
 import kr.tracom.smps.scenario.controller.ScenarioController;
@@ -31,10 +34,11 @@ import kr.tracom.smps.statistics.mapper.StatisticsMapper;
 
 @Service
 public class ExecuteHandler {
-	//park
-	@Autowired
-	private ScenarioService service;
-	//
+	
+	Map<String, Object> result = null;//park
+	//String workSeq;
+	
+	
 	@Autowired
 	private BaseMapper baseMapper;
 	
@@ -83,12 +87,14 @@ public class ExecuteHandler {
 				
 				statisticsMapper.insertHistory(history);
 				process(action, handler);
+				
+				
 			}
 			long end = System.currentTimeMillis();
 			System.out.println("동작 총 실행시간(ms): " + (end - start) / 1000.0);
+			
 		} else if(workType.equals("SR")) {
 			List<Map<String, Object>> scenarioList = (List<Map<String, Object>>) input.get("scenarioList");
-			
 			// 총 삽입해야될 개수 계산
 			int totalCount = 0;
 			for(Map<String, Object> scenario : scenarioList) {
@@ -134,12 +140,11 @@ public class ExecuteHandler {
 			long end = System.currentTimeMillis();
 			System.out.println("시나리오 총 실행시간(ms): " + (end - start) / 1000.0);
 			
-			//park
-			//service.updateReserveScenario(input, 2, ScenarioController.srTemp);
 			
 		}
 	}
 	
+
 	public void process(Map<String, Object> request, DataHandler handler) {
 		String actionName = request.get("actionName").toString();
 		String token = request.get("token").toString();
@@ -154,8 +159,9 @@ public class ExecuteHandler {
 		
 		// 요청 간격 - park
 		//int speed = (int)((TPS_TIME / userCount) * 0.9);
-		int speed = (int)((timeSet*1000 / userCount) * 0.9);
-		
+		int speed = (int)((timeSet*TPS_TIME / userCount) * 0.9);
+		/******************************************************/
+
 		// http 요청 시작
 		DefaultAsyncHttpClientConfig.Builder clientBuilder = Dsl.config()
 				.setConnectTimeout(timeout)
@@ -185,12 +191,15 @@ public class ExecuteHandler {
 				final int loopIndex = i;
 				
 				long repeatStart = System.currentTimeMillis();
+				System.out.println(i+"번 루프");//park
 				for(int j = 1; j < userCount + 1; j++) {
 					if(handler.getFlag())
 						return;
 					
 					final int executeIndex = j;
-					
+					//park
+//					System.out.println(j+"번째 건");
+					//
 					builder.execute(new AsyncHandler<Integer>() {
 						long start = System.currentTimeMillis();
 						private Integer status;
@@ -226,7 +235,9 @@ public class ExecuteHandler {
 							
 							System.out.println("에러발생: " + t.getMessage());
 							
-							Map<String, Object> result = new HashMap<>();
+							//Map<String, Object> result = new HashMap<>();
+							result = new HashMap<>();//park
+
 							result.put("workSeq", workSeq);
 							result.put("rstName", rstName);
 							
@@ -236,7 +247,15 @@ public class ExecuteHandler {
 							result.put("resTime", resTime);
 							result.put("rstContent", t.getMessage());
 							
+							//park
+//							System.out.println(executeIndex+"번째 오류응답");
+							//
+							Util.delay(speed);//park
 							handler.putData(result);
+							
+							long heapSize = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+					        //System.out.println("Heap Size : " + heapSize);
+					        //System.out.println("Heap Size(M) - Exception : " + heapSize / (1024 * 1024) + " MB");
 						}
 
 						@Override
@@ -248,7 +267,9 @@ public class ExecuteHandler {
 							if(resTime > timeout)
 								rstType = "FAIL";
 							
-							Map<String, Object> result = new HashMap<>();
+							//Map<String, Object> result = new HashMap<>();
+							result = new HashMap<>();//park 
+							
 							result.put("workSeq", workSeq);
 							result.put("rstName", rstName);
 							result.put("rstType", rstType);
@@ -257,12 +278,23 @@ public class ExecuteHandler {
 							result.put("resTime", resTime);
 							result.put("rstContent", rstContent.toString());
 							
+							//park
+//							System.out.println(executeIndex+"번째 응답");
+							//
+							//result.put("timeout", timeout);//park 추가
+
+							Util.delay(speed);//park
 							handler.putData(result);
+							
+							long heapSize = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+					        //System.out.println("Heap Size : " + heapSize);
+					        //System.out.println("Heap Size(M) - Success : " + heapSize / (1024 * 1024) + " MB");
 							
 							return status;
 						}
 						
 					});
+					
 					Util.delay(speed);
 				}
 				

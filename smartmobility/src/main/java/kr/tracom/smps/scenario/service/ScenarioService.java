@@ -67,42 +67,89 @@ public class ScenarioService {
 	public boolean insertReserve(Map<String, Object> input) {
 		boolean result = false;
 		
+		//sessionId도 넘어왔음 reservedb에 저장
+		/**               시나리오 아이디 제대로 저장됨                   **/
+		//System.out.println("시나리오: "+input.get("scenario"));
+		LinkedHashMap temp = (LinkedHashMap) input.get("scenario");
+		/////
+		List<Map<String, Object>> scenarioList = (List<Map<String, Object>>) temp.get("scenarioList");
+		//System.out.println("시나리오 리스트 : "+scenarioList);
+		//System.out.println("시나리오 리스트의 시나리오 ID: "+scenarioList.get(0).get("scenarioId"));
+		//System.out.println("session 있니 : "+input.get("sessionId"));
+		String scenarioId = (String) scenarioList.get(0).get("scenarioId");//한 예약에 여러개의 시나리오 처리하려면 scenarioIds해서 여러개 만들어야함. 한 예약에 한 시나리오만
 		
-		String scenarioId = mapper.selectLastScenarioId(input);
+//		String scenarioId = mapper.selectLastScenarioId(input);
+//		System.out.println("시나리오id : "+scenarioId);
 		((Map<String, Object>)input.get("scenario")).put("scenarioId", scenarioId);
-		//System.out.println("예약아이디 : "+reserveId+" 시나리오아이디 : "+scenarioId);
+		((Map<String, Object>)input.get("scenario")).put("sessionId", input.get("sessionId")); //sessionId db 저장
+		/***********************************************/
+		//System.out.println("예약 시나리오에 저장된 액션들 : "+mapper.selectScenarioActionList(temp));
 		
 		
 		if(mapper.insertReserve(input) > 0)
 			result = true;
 		
-		//mapper.insertReserveAction(input);
+		//mapper.insertScenarioAction(input);
 		
 		return result;
 	}
 	
+//	@Transactional
+//	public boolean updateReserveScenario(Map<String, Object> input, int status, LinkedHashMap<String, Object> tempMap) {
+//		boolean result = false;
+//		
+//		//db 예약상태 업데이트
+//		if(status==0) {
+//			System.out.println("srTemp 넣기 전 input : "+input);
+//			tempMap.put("status","대기중");
+//			input.put("scenario", tempMap);
+//			System.out.println("srTemp 넣은 후 input : "+input);
+//			
+//			//System.out.println("새로운 INPUT!!!!! : "+input);
+//		}else if(status==1) {
+//			tempMap.put("status","실행중");
+//			input.put("scenario", tempMap);
+//			//System.out.println("새로운 INPUT!!!!! : "+input);
+//		}else if(status==2) {
+//			tempMap.put("status","실행완료");
+//			input.put("scenario", tempMap);
+//			//System.out.println("새로운 INPUT!!!!! : "+input);
+//		}else {
+//			System.out.println("잘못된 예약 상태값");
+//		}
+//		System.out.println("srTemp : "+ tempMap.get("status"));
+//		System.out.println("확인!!!!"+input);
+//		
+//		if(mapper.updateReserveScenario(input) > 0)
+//			result = true;
+//
+//		//mapper.deleteScenarioAction(input);
+//		//mapper.insertScenarioAction(input);
+//
+//		return result;
+//	}
+	
 	@Transactional
-	public boolean updateReserveScenario(Map<String, Object> input, int status, LinkedHashMap<String, Object> tempMap) {
+	public boolean updateReserveScenario(Map<String, Object> input, String status) {
 		boolean result = false;
 		
 		//db 예약상태 업데이트
-		if(status==0) {
-			tempMap.put("status","대기중");
-			input.put("scenario", tempMap);
+		if(status.equals("대기중")) {
+			//System.out.println("srTemp 넣기 전 input : "+input);
+			((Map<String, Object>) input.get("scenario")).put("status", status);
+			//System.out.println("srTemp 넣은 후 input : "+input);
 			//System.out.println("새로운 INPUT!!!!! : "+input);
-		}else if(status==1) {
-			tempMap.put("status","실행중");
-			input.put("scenario", tempMap);
+		}else if(status.equals("실행중")) {
+			((Map<String, Object>) input.get("scenario")).put("status", status);
 			//System.out.println("새로운 INPUT!!!!! : "+input);
-		}else if(status==2) {
-			tempMap.put("status","실행완료");
-			input.put("scenario", tempMap);
+		}else if(status.equals("실행완료")) {
+			((Map<String, Object>) input.get("scenario")).put("status", status);
 			//System.out.println("새로운 INPUT!!!!! : "+input);
 		}else {
 			System.out.println("잘못된 예약 상태값");
 		}
-		System.out.println("srTemp : "+ tempMap.get("status"));
-		System.out.println("확인!!!!"+input);
+
+		//System.out.println("확인!!!!"+input);
 		
 		if(mapper.updateReserveScenario(input) > 0)
 			result = true;

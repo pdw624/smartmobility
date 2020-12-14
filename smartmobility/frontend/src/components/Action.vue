@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Layout style="width: 100%; height: 800px">
+        <Layout style="width: 100%;">
             <LayoutPanel region="north" :border="false" style="height: 45px; text-align: right;">
                 <Buttons :buttonEvents="buttonEvents"/>
             </LayoutPanel>
@@ -205,12 +205,12 @@ export default {
                 ],
                 timeSet: [
                     { required: true, message: '실행시간을 입력해주세요', trigger: 'blur' },
-                    // {
-                    //     validator: (rule, value, callback) => {
-                    //         var regex = /^[0-9]+$/
-                    //         value.match(regex) ? callback() : callback(new Error('실행 시간은 숫자만 입력 가능합니다.'))
-                    //     }
-                    // }
+                    {
+                        validator: (rule, value, callback) => {
+                            var regex = /^[0-9]+$/
+                            String(value).match(regex) ? callback() : callback(new Error('실행 시간은 숫자만 입력 가능합니다.'))
+                        }
+                    }
                 ],
                 url: [
                     { required: true, message: 'URL을 입력해주세요', trigger: 'blur' },
@@ -351,26 +351,42 @@ export default {
 
         // 동작내용 폼에서 저장버튼 클릭시 이벤트
         saveAction(form) {
-            this.$refs[form].validate((valid) => {
-                if(valid) {
-                    // 수정인지 추가인지 여부
-                    // 수정
-                    if(this.isUpdate) {
-                        this.axios.put('/api/v1/action', this.actionForm).then(response => {
-                            this.loadGrid()
-                        })
-                    }
-                    // 추가
-                    else {
-                        this.axios.post('/api/v1/action', this.actionForm).then(response => {
-                            this.loadGrid(true)
-                        })
-                    }
-                    this.notification('saveAction')
-                } else {
-                    return false
+
+            var isRun = false;
+            this.axios.post('/api/v1/action/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    this.$refs[form].validate((valid) => {
+                        if(valid) {
+                            // 수정인지 추가인지 여부
+                            // 수정
+                            if(this.isUpdate) {
+                                this.axios.put('/api/v1/action', this.actionForm).then(response => {
+                                    this.loadGrid()
+                                })
+                            }
+                            // 추가
+                            else {
+                                this.axios.post('/api/v1/action', this.actionForm).then(response => {
+                                    this.loadGrid(true)
+                                })
+                            }
+                            this.notification('saveAction')
+                        } else {
+                            return false
+                        }
+                    })
                 }
+                    
             })
+
+
         },
 
         // 동작에서 추가 버튼 클릭시
@@ -382,32 +398,47 @@ export default {
 
         // 동작에서 삭제 버튼 클릭시
         deleteAction() {
-            if(this.checkedRows.length == 0) {
-                this.notification('deleteActionCheck')
-            } else {
-                this.$confirm('체크한 동작들을 삭제하시겠습니까?', {
-                    confirmButtonText: '삭제',
-                    cancelButtonText: '취소',
-                    type: 'warning'
-                }).then(() => {
-                    // 체크된 동작중 Id 값만 추출
-                    var actionIds = []
-                    this.checkedRows.forEach(row => actionIds.push(row.actionId))
 
-                    this.axios.delete('/api/v1/action', {
-                        data: {
-                            actionIds: actionIds
-                        }
-                    }).then(response => {
-                        if(response.data) {
-                            this.loadGrid(true)
-                            this.notification('deleteAction')
-                        }
-                    }).catch(ex => {
-                        this.notification('deleteActionError')
-                    })
-                })
-            }
+            var isRun = false;
+            this.axios.post('/api/v1/action/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    if(this.checkedRows.length == 0) {
+                        this.notification('deleteActionCheck')
+                    } else {
+                        this.$confirm('체크한 동작들을 삭제하시겠습니까?', {
+                            confirmButtonText: '삭제',
+                            cancelButtonText: '취소',
+                            type: 'warning'
+                        }).then(() => {
+                            // 체크된 동작중 Id 값만 추출
+                            var actionIds = []
+                            this.checkedRows.forEach(row => actionIds.push(row.actionId))
+
+                            this.axios.delete('/api/v1/action', {
+                                data: {
+                                    actionIds: actionIds
+                                }
+                            }).then(response => {
+                                if(response.data) {
+                                    this.loadGrid(true)
+                                    this.notification('deleteAction')
+                                }
+                            }).catch(ex => {
+                                this.notification('deleteActionError')
+                            })
+                        })
+                    }
+                }
+                    
+            })
+
         },
 
         // 동작에서 실행 버튼 클릭시 
@@ -425,14 +456,10 @@ export default {
             // }
 
 
-
-
-
-
             var scenarioExecute = false;
             
-            this.axios.get('/api/v1/scenario/checkScenario').then(response => {
-                console.log("bbbbbbbbbbbb   ",response.data.executeFlag)
+            this.axios.post('/api/v1/scenario/checkScenario',/*추가!*/{actionList: this.checkedRows}).then(response => {
+                //console.log("bbbbbbbbbbbb   ",response.data.executeFlag)
                 scenarioExecute = response.data.executeFlag
                 //if (response.data.executeFlag != null){
                     if (scenarioExecute == true){
@@ -442,7 +469,7 @@ export default {
                         
                     }else{
                         if(this.checkedRows.length == 0) {
-                            this.notification('executeScenarioCheck')
+                            this.notification('executeActionCheck')
                         } else {
                             this.setIsExecute({
                                 isExecute: true,
@@ -456,10 +483,6 @@ export default {
                     //return;
                 //}
             })
-
-
-
-
 
 
 
@@ -482,20 +505,35 @@ export default {
 
         // 동작 복원 버튼 클릭시
         recoveryAction(row) {
-            this.$confirm('동작을 복원하시겠습니까?', '동작복원', {
-                confirmButtonText: '복원',
-                cancelButtonText: '취소',
-                type: 'info'
-            }).then(() => {
-                this.axios.post('/api/v1/action/recovery', {
-                    actionIds: [row.actionId]
-                }).then(response => {
-                    this.loadGrid()
-                    this.loadDeletedGrid()
-                }).catch(() => {
+            
+            var isRun = false;
+            this.axios.post('/api/v1/action/check',/*추가!*/).then(response => {
+                //console.log("캬캬   ",response.data.executeFlag)
+                isRun = response.data.executeFlag
+                //if (response.data.executeFlag != null){
+                if (isRun == true){
+                    // 메시지 띄우는 로직
+                    //alert("뭔가 실행중이야!!!!");
+                    this.notification('actionIsRun')
+                }else{
+                    this.$confirm('동작을 복원하시겠습니까?', '동작복원', {
+                        confirmButtonText: '복원',
+                        cancelButtonText: '취소',
+                        type: 'info'
+                    }).then(() => {
+                        this.axios.post('/api/v1/action/recovery', {
+                            actionIds: [row.actionId]
+                        }).then(response => {
+                            this.loadGrid()
+                            this.loadDeletedGrid()
+                        }).catch(() => {
 
-                })
+                        })
+                    })
+                }
+                    
             })
+            
         },
         
     }
